@@ -1,0 +1,77 @@
+version: '3'
+services:
+  redis:
+    restart: always
+    image: redis:7-alpine
+    networks:
+      - internal_network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+    volumes:
+      - ./redis:/data
+
+  web:
+    image: ghcr.io/painterpuppets/mastodon:private-3583d10
+    restart: always
+    env_file: .env.production
+    command: bundle exec puma -C config/puma.rb
+    networks:
+      - external_network
+      - internal_network
+    healthcheck:
+      # prettier-ignore
+      test: ['CMD-SHELL', 'wget -q --spider --proxy=off localhost:3000/health || exit 1']
+    ports:
+      - '127.0.0.1:3000:3000'
+    depends_on:
+      # - db
+      - redis
+      # - es
+    volumes:
+      - ./public/system:/mastodon/public/system
+
+  streaming:
+    image: ghcr.io/painterpuppets/mastodon:private-3583d10
+    restart: always
+    env_file: .env.production
+    command: node ./streaming
+    networks:
+      - external_network
+      - internal_network
+    healthcheck:
+      # prettier-ignore
+      test: ['CMD-SHELL', 'wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1']
+    ports:
+      - '127.0.0.1:4000:4000'
+    depends_on:
+      # - db
+      - redis
+
+  sidekiq:
+    image: ghcr.io/painterpuppets/mastodon:private-3583d10
+    restart: always
+    env_file: .env.production
+    command: bundle exec sidekiq
+    depends_on:
+      # - db
+      - redis
+    networks:
+      - external_network
+      - internal_network
+    volumes:
+      - ./public/system:/mastodon/public/system
+    healthcheck:
+      test: ['CMD-SHELL', "ps aux | grep '[s]idekiq\ 6' || false"]
+    deploy:
+      resources:
+        limits:
+          memory: 4096M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5g"
+
+networks:
+  external_network:
+  internal_network:
+    internal: true
