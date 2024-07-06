@@ -11,7 +11,7 @@ services:
       - ./redis:/data
 
   web:
-    image: ghcr.io/painterpuppets/mastodon:private-5385927
+    image: ghcr.io/painterpuppets/mastodon:private-89a1125
     restart: always
     env_file: .env.production
     command: bundle exec puma -C config/puma.rb
@@ -31,7 +31,7 @@ services:
       - ./public/system:/mastodon/public/system
 
   streaming:
-    image: ghcr.io/painterpuppets/mastodon:private-5385927
+    image: ghcr.io/painterpuppets/mastodon:private-89a1125
     restart: always
     env_file: .env.production
     command: node ./streaming
@@ -48,7 +48,7 @@ services:
       - redis
 
   sidekiq:
-    image: ghcr.io/painterpuppets/mastodon:private-5385927
+    image: ghcr.io/painterpuppets/mastodon:private-89a1125
     restart: always
     env_file: .env.production
     command: bundle exec sidekiq
@@ -75,7 +75,7 @@ services:
     restart: always
     image: painterpuppets/elasticsearch-ikts:7.17.4
     environment:
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m -Des.enforce.bootstrap.checks=true"
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g -Des.enforce.bootstrap.checks=true"
       - "xpack.license.self_generated.type=basic"
       - "xpack.security.enabled=false"
       - "xpack.watcher.enabled=false"
