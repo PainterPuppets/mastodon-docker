@@ -1,4 +1,3 @@
-version: '3'
 services:
   redis:
     restart: always
@@ -11,7 +10,7 @@ services:
       - ./redis:/data
 
   web:
-    image: ghcr.io/painterpuppets/mastodon:private-89a1125
+    image: ghcr.io/mastodon/mastodon:v4.5.5
     restart: always
     env_file: .env.production
     command: bundle exec puma -C config/puma.rb
@@ -20,7 +19,7 @@ services:
       - internal_network
     healthcheck:
       # prettier-ignore
-      test: ['CMD-SHELL', 'wget -q --spider --proxy=off localhost:3000/health || exit 1']
+      test: ['CMD-SHELL',"curl -s --noproxy localhost localhost:3000/health | grep -q 'OK' || exit 1"]
     ports:
       - '127.0.0.1:3000:3000'
     depends_on:
@@ -31,16 +30,16 @@ services:
       - ./public/system:/mastodon/public/system
 
   streaming:
-    image: ghcr.io/painterpuppets/mastodon:private-89a1125
+    image: ghcr.io/mastodon/mastodon-streaming:v4.5.5
     restart: always
     env_file: .env.production
-    command: node ./streaming
+    command: node ./streaming/index.js
     networks:
       - external_network
       - internal_network
     healthcheck:
       # prettier-ignore
-      test: ['CMD-SHELL', 'wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1']
+      test: ['CMD-SHELL', "curl -s --noproxy localhost localhost:4000/api/v1/streaming/health | grep -q 'OK' || exit 1"]
     ports:
       - '127.0.0.1:4000:4000'
     depends_on:
@@ -48,7 +47,7 @@ services:
       - redis
 
   sidekiq:
-    image: ghcr.io/painterpuppets/mastodon:private-89a1125
+    image: ghcr.io/mastodon/mastodon:v4.5.5
     restart: always
     env_file: .env.production
     command: bundle exec sidekiq
@@ -61,46 +60,7 @@ services:
     volumes:
       - ./public/system:/mastodon/public/system
     healthcheck:
-      test: ['CMD-SHELL', "ps aux | grep '[s]idekiq\ 6' || false"]
-    deploy:
-      resources:
-        limits:
-          memory: 4096M
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5g"
-
-  # es:
-  #   restart: always
-  #   image: painterpuppets/elasticsearch-ikts:7.17.4
-  #   environment:
-  #     - "ES_JAVA_OPTS=-Xms1g -Xmx1g -Des.enforce.bootstrap.checks=true"
-  #     - "xpack.license.self_generated.type=basic"
-  #     - "xpack.security.enabled=false"
-  #     - "xpack.watcher.enabled=false"
-  #     - "xpack.graph.enabled=false"
-  #     - "xpack.ml.enabled=false"
-  #     - "bootstrap.memory_lock=true"
-  #     - "cluster.name=es-mastodon"
-  #     - "discovery.type=single-node"
-  #     - "thread_pool.write.queue_size=1000"
-  #   networks:
-  #     - external_network
-  #     - internal_network
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
-  #   volumes:
-  #     - ./elasticsearch:/var/lib/elasticsearch/data
-  #   ulimits:
-  #     memlock:
-  #       soft: -1
-  #       hard: -1
-  #     nofile:
-  #       soft: 65536
-  #       hard: 65536
-  #   ports:
-  #     - '127.0.0.1:9200:9200'
+      test: ['CMD-SHELL', "ps aux | grep '[s]idekiq\ 8' || false"]
 
 networks:
   external_network:
